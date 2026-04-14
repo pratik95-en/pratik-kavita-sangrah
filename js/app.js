@@ -15,7 +15,45 @@ document.addEventListener('DOMContentLoaded', () => {
   startHeroAuto();
   setupTabs();
   setupMenu();
+  startClock();
 });
+
+// ===== NEPALI CLOCK =====
+const NEPALI_NUMS = ['०','१','२','३','४','५','६','७','८','९'];
+const NEPALI_MONTHS = ['जनवरी','फेब्रुअरी','मार्च','अप्रिल','मे','जुन','जुलाई','अगस्ट','सेप्टेम्बर','अक्टोबर','नोभेम्बर','डिसेम्बर'];
+const NEPALI_DAYS = ['आइतबार','सोमबार','मंगलबार','बुधबार','बिहिबार','शुक्रबार','शनिबार'];
+
+function toNepaliNum(n) {
+  return String(n).split('').map(d => NEPALI_NUMS[+d] ?? d).join('');
+}
+
+function pad2(n) { return String(n).padStart(2, '0'); }
+
+function startClock() {
+  function update() {
+    const now = new Date();
+    let h = now.getHours();
+    const m = now.getMinutes();
+    const s = now.getSeconds();
+    const ampm = h >= 12 ? 'बेलुका' : 'बिहान';
+
+    // 12-hour format
+    if (h === 0) h = 12;
+    else if (h > 12) h = h - 12;
+
+    const timeStr = `${toNepaliNum(pad2(h))}:${toNepaliNum(pad2(m))}:${toNepaliNum(pad2(s))} ${ampm}`;
+
+    const day = NEPALI_DAYS[now.getDay()];
+    const date = toNepaliNum(now.getDate());
+    const month = NEPALI_MONTHS[now.getMonth()];
+    const year = toNepaliNum(now.getFullYear());
+
+    const el = document.getElementById('liveClock');
+    if (el) el.textContent = `${day}, ${date} ${month} ${year} | ${timeStr}`;
+  }
+  update();
+  setInterval(update, 1000);
+}
 
 // ===== HERO SLIDES =====
 function renderHero() {
