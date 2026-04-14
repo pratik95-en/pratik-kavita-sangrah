@@ -10,7 +10,7 @@ const KAVITA_DATA = [
     title: "मेरो देश",
     category: "kavita",
     tags: ["देश", "प्रकृति", "गर्व"],
-    cover: " covers/k007.png", // "covers/k001.jpg" राख्नुस् - नभए emoji देखिन्छ
+    cover: "covers/k007.png", // "covers/k001.jpg" राख्नुस् - नभए emoji देखिन्छ
     coverEmoji: "🏔️",
     date: "2024-12-01",
     readTime: "३ मिनेट",
