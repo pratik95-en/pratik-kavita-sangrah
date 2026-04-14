@@ -90,6 +90,13 @@ body {
   text-transform: uppercase;
   font-family: 'DM Sans', sans-serif;
 }
+.logo-clock {
+  font-size: 11px;
+  color: rgba(255,255,255,0.80);
+  font-family: 'DM Sans', sans-serif;
+  letter-spacing: 0.5px;
+  margin-top: 1px;
+}
 .header-right { display: flex; align-items: center; gap: 4px; }
 .icon-btn {
   background: none;
@@ -718,3 +725,4 @@ input:checked + .slider::before { transform: translateX(18px); }
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  
