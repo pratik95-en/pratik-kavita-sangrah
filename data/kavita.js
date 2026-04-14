@@ -82,7 +82,7 @@ const KAVITA_DATA = [
     title: "आमाको माया",
     category: "kavita",
     tags: ["आमा", "माया", "परिवार"],
-    cover: "",
+    cover: "covers/k007.png",
     coverEmoji: "❤️",
     date: "2025-02-14",
     readTime: "४ मिनेट",
