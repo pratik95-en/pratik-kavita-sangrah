@@ -10,7 +10,7 @@ const KAVITA_DATA = [
     title: " राष्ट्र प्रेम ",
     category: "kavita",
     tags: ["देश", "राष्ट्र प्रेम", " इतिहास"],
-    cover: "covers/1776176711764.png", // "covers/k001.jpg" राख्नुस् - नभए emoji देखिन्छ
+    cover: " covers/1776177925119.png", // "covers/k001.jpg" राख्नुस् - नभए emoji देखिन्छ
     coverEmoji: "🏔️",
     date: "2024-12-01",
     readTime: "३ मिनेट",
@@ -46,7 +46,7 @@ const KAVITA_DATA = [
     title: "हाँसेर बोल्ने गर 😁",
     category: "kavita",
     tags: ["हाँसो", "मुस्कान", "जीवन दर्शन"],
-    cover: "",
+    cover: "covers/1776176711764.png",
     coverEmoji: "🌙",
     date: "2025-01-10",
     readTime: "२ मिनेट",
