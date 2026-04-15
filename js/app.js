@@ -57,8 +57,8 @@ function startClock() {
 
 // ===== HERO SLIDES =====
 function renderHero() {
-  const featured = KAVITA_DATA.filter(p => p.featured);
-  const slides = featured.length ? featured : KAVITA_DATA.slice(0, 3);
+  // सबै कविता randomly shuffle गर्ने
+  const slides = [...KAVITA_DATA].sort(() => Math.random() - 0.5);
   const container = document.getElementById('heroSlides');
   const dotsContainer = document.getElementById('heroDots');
 
