@@ -187,7 +187,7 @@ const KAVITA_DATA = [
     title: "गजेन्द्रमोक्ष",
     category: "kavita",
     tags: ["भक्ति", "साधना", "त्याग"],
-    cover: "गजेन्द्रमोक्ष.png",
+    cover: "covers/गजेन्द्रमोक्ष.png",
     coverEmoji: "🌧️",
     date: "2025-03-15",
     readTime: "२ मिनेट",
