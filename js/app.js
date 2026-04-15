@@ -5,7 +5,108 @@ let currentTag = null;
 let currentPoem = null;
 let heroInterval = null;
 let heroIndex = 0;
+let heroSlides = [];
 let isEnglish = false;
+
+// ===== NEPALI HELPERS =====
+const NEPALI_NUMS  = ['०','१','२','३','४','५','६','७','८','९'];
+const NEPALI_DAYS  = ['आइतबार','सोमबार','मंगलबार','बुधबार','बिहिबार','शुक्रबार','शनिबार'];
+const NEPALI_MONTHS_BS = ['बैशाख','जेठ','असार','साउन','भदौ','असोज','कार्तिक','मंसिर','पुस','माघ','फागुन','चैत'];
+
+function toNepaliNum(n) {
+  return String(n).split('').map(d => NEPALI_NUMS[+d] !== undefined ? NEPALI_NUMS[+d] : d).join('');
+}
+function pad2(n) { return String(n).padStart(2, '0'); }
+
+// ===== NEPALI DATE CONVERSION (BS) =====
+// बैशाख १ को अंग्रेजी मिति reference
+const BS_START = [
+  { bs: [2079, 1, 1], eng: [2022, 4, 14] },
+  { bs: [2080, 1, 1], eng: [2023, 4, 14] },
+  { bs: [2081, 1, 1], eng: [2024, 4, 13] },
+  { bs: [2082, 1, 1], eng: [2025, 4, 14] },
+  { bs: [2083, 1, 1], eng: [2026, 4, 14] },
+  { bs: [2084, 1, 1], eng: [2027, 4, 14] },
+];
+
+// प्रत्येक BS वर्षमा महिनाको दिन
+const BS_DAYS = {
+  2079: [31,32,31,32,31,30,30,30,29,30,29,31],
+  2080: [31,32,31,32,31,30,30,30,29,30,29,31],
+  2081: [31,31,32,31,31,31,30,29,30,30,29,31],
+  2082: [31,32,31,32,31,30,30,30,29,30,29,31],
+  2083: [31,32,31,32,31,30,30,30,29,30,29,31],
+  2084: [31,32,31,31,31,31,30,29,30,30,29,31],
+};
+
+function engToBS(engDate) {
+  try {
+    // Reference point खोज्ने
+    let ref = null;
+    for (let i = BS_START.length - 1; i >= 0; i--) {
+      const r = BS_START[i];
+      const refDate = new Date(r.eng[0], r.eng[1] - 1, r.eng[2]);
+      if (engDate >= refDate) {
+        ref = { bsYear: r.bs[0], bsMonth: 0, bsDay: 1, refDate };
+        break;
+      }
+    }
+    if (!ref) return null;
+
+    // Reference देखि कति दिन बितेको
+    let diff = Math.floor((engDate - ref.refDate) / 86400000);
+    let y = ref.bsYear;
+    let m = 0; // 0-indexed
+    let d = 1;
+
+    while (diff > 0) {
+      const daysInMonth = (BS_DAYS[y] && BS_DAYS[y][m]) ? BS_DAYS[y][m] : 30;
+      const left = daysInMonth - d;
+      if (diff <= left) {
+        d += diff;
+        diff = 0;
+      } else {
+        diff -= (left + 1);
+        d = 1;
+        m++;
+        if (m >= 12) { m = 0; y++; }
+      }
+    }
+    return { year: y, month: m + 1, day: d };
+  } catch(e) {
+    return null;
+  }
+}
+
+// ===== CLOCK =====
+function startClock() {
+  function tick() {
+    try {
+      const el = document.getElementById('liveClock');
+      if (!el) return;
+
+      const now = new Date();
+      let h = now.getHours();
+      const m = now.getMinutes();
+      const s = now.getSeconds();
+      const ampm = h >= 12 ? 'बेलुका' : 'बिहान';
+      if (h === 0) h = 12;
+      else if (h > 12) h -= 12;
+
+      const time = `${toNepaliNum(pad2(h))}:${toNepaliNum(pad2(m))}:${toNepaliNum(pad2(s))} ${ampm}`;
+      const weekday = NEPALI_DAYS[now.getDay()];
+
+      const bs = engToBS(now);
+      const date = bs
+        ? `${weekday}, ${toNepaliNum(bs.day)} ${NEPALI_MONTHS_BS[bs.month - 1]} ${toNepaliNum(bs.year)}`
+        : weekday;
+
+      el.textContent = `${date} | ${time}`;
+    } catch(e) {}
+  }
+  tick();
+  setInterval(tick, 1000);
+}
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
@@ -15,113 +116,16 @@ document.addEventListener('DOMContentLoaded', () => {
   startHeroAuto();
   setupTabs();
   setupMenu();
+  startClock();
 });
 
-// ===== NEPALI CLOCK =====
-const NEPALI_NUMS = ['०','१','२','३','४','५','६','७','८','९'];
-const NEPALI_MONTHS = ['बैशाख','जेठ','असार','साउन','भदौ','असोज','कार्तिक','मंसिर','पुस','माघ','फागुन','चैत'];
-const NEPALI_DAYS   = ['आइतबार','सोमबार','मंगलबार','बुधबार','बिहिबार','शुक्रबार','शनिबार'];
-
-function toNepaliNum(n) {
-  return String(n).split('').map(d => NEPALI_NUMS[+d] ?? d).join('');
-}
-function pad2(n) { return String(n).padStart(2, '0'); }
-
-// ===== ENGLISH → NEPALI DATE CONVERSION =====
-// Each entry = [nepali_year, nepali_month(1-12), nepali_day, english_year, english_month(1-12), english_day]
-// यो table ले हरेक वर्षको बैशाख १ को अंग्रेजी मिति राख्छ
-const BS_CALENDAR = [
-  [2080, 1, 1, 2023, 4, 14],
-  [2081, 1, 1, 2024, 4, 13],
-  [2082, 1, 1, 2025, 4, 14],
-  [2083, 1, 1, 2026, 4, 14],
-  [2084, 1, 1, 2027, 4, 14],
-];
-
-// प्रत्येक BS वर्षमा महिनाको दिन संख्या
-const BS_MONTH_DAYS = {
-  2080: [31,32,31,32,31,30,30,30,29,30,29,31],
-  2081: [31,31,32,31,31,31,30,29,30,30,29,31],
-  2082: [31,32,31,32,31,30,30,30,29,30,29,31],
-  2083: [31,32,31,32,31,30,30,30,29,30,29,31],
-  2084: [31,32,31,31,31,31,30,29,30,30,29,31],
-};
-
-function englishToNepali(engYear, engMonth, engDay) {
-  // Reference point खोज्ने
-  let refBS = null;
-  for (let i = BS_CALENDAR.length - 1; i >= 0; i--) {
-    const [by, bm, bd, ey, em, ed] = BS_CALENDAR[i];
-    const refEng = new Date(ey, em - 1, ed);
-    const target = new Date(engYear, engMonth - 1, engDay);
-    if (target >= refEng) {
-      refBS = { by, bm: bm - 1, bd, refDate: refEng };
-      break;
-    }
-  }
-  if (!refBS) return null;
-
-  // Reference देखि कति दिन बितेको
-  const target = new Date(engYear, engMonth - 1, engDay);
-  let diffDays = Math.floor((target - refBS.refDate) / 86400000);
-
-  let year = refBS.by;
-  let month = refBS.bm; // 0-indexed
-  let day = refBS.bd;
-
-  while (diffDays > 0) {
-    const monthDays = BS_MONTH_DAYS[year]?.[month] ?? 30;
-    const remaining = monthDays - day;
-    if (diffDays <= remaining) {
-      day += diffDays;
-      diffDays = 0;
-    } else {
-      diffDays -= (remaining + 1);
-      day = 1;
-      month++;
-      if (month >= 12) { month = 0; year++; }
-    }
-  }
-
-  return { year, month: month + 1, day };
-}
-
-function startClock() {
-  function update() {
-    const now = new Date();
-    let h = now.getHours();
-    const m = now.getMinutes();
-    const s = now.getSeconds();
-    const ampm = h >= 12 ? 'बेलुका' : 'बिहान';
-    if (h === 0) h = 12;
-    else if (h > 12) h = h - 12;
-
-    const timeStr = `${toNepaliNum(pad2(h))}:${toNepaliNum(pad2(m))}:${toNepaliNum(pad2(s))} ${ampm}`;
-    const weekDay = NEPALI_DAYS[now.getDay()];
-
-    // Nepali date conversion
-    const np = englishToNepali(now.getFullYear(), now.getMonth() + 1, now.getDate());
-    let dateStr = '';
-    if (np) {
-      dateStr = `${weekDay}, ${toNepaliNum(np.day)} ${NEPALI_MONTHS[np.month - 1]} ${toNepaliNum(np.year)}`;
-    } else {
-      dateStr = weekDay;
-    }
-
-    const el = document.getElementById('liveClock');
-    if (el) el.textContent = `${dateStr} | ${timeStr}`;
-  }
-  update();
-  setInterval(update, 1000);
-}
 // ===== HERO SLIDES =====
 function renderHero() {
-  // सबै कविता randomly shuffle गर्ने
-  const slides = [...KAVITA_DATA].sort(() => Math.random() - 0.5);
+  heroSlides = [...KAVITA_DATA].sort(() => Math.random() - 0.5);
   const container = document.getElementById('heroSlides');
   const dotsContainer = document.getElementById('heroDots');
 
-  container.innerHTML = slides.map((p, i) => `
+  container.innerHTML = heroSlides.map(p => `
     <div class="hero-slide" onclick="openPoem('${p.id}')">
       ${p.cover ? `<img src="${p.cover}" class="hero-slide-bg" alt="" />` : ''}
       <div class="hero-slide-info">
@@ -129,18 +133,20 @@ function renderHero() {
         <div class="hero-slide-title">${p.title}</div>
         <div class="hero-slide-btn">${isEnglish ? 'Read Now' : 'पढ्नुस्'}</div>
       </div>
-      <div class="hero-slide-cover">${p.cover ? `<img src="${p.cover}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;" />` : p.coverEmoji}</div>
+      <div class="hero-slide-cover">
+        ${p.cover
+          ? `<img src="${p.cover}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;" />`
+          : p.coverEmoji}
+      </div>
     </div>
   `).join('');
 
-  dotsContainer.innerHTML = slides.map((_, i) =>
-    `<div class="hero-dot ${i===0?'active':''}" onclick="goToSlide(${i})"></div>`
+  dotsContainer.innerHTML = heroSlides.map((_, i) =>
+    `<div class="hero-dot ${i === 0 ? 'active' : ''}" onclick="goToSlide(${i})"></div>`
   ).join('');
 }
 
 function goToSlide(index) {
-  const slides = KAVITA_DATA.filter(p => p.featured);
-  const total = slides.length || Math.min(KAVITA_DATA.length, 3);
   heroIndex = index;
   document.getElementById('heroSlides').style.transform = `translateX(-${heroIndex * 100}%)`;
   document.querySelectorAll('.hero-dot').forEach((d, i) => d.classList.toggle('active', i === heroIndex));
@@ -148,9 +154,7 @@ function goToSlide(index) {
 
 function startHeroAuto() {
   heroInterval = setInterval(() => {
-    const featured = KAVITA_DATA.filter(p => p.featured);
-    const total = featured.length || Math.min(KAVITA_DATA.length, 3);
-    heroIndex = (heroIndex + 1) % total;
+    heroIndex = (heroIndex + 1) % (heroSlides.length || 1);
     goToSlide(heroIndex);
   }, 4000);
 }
@@ -159,7 +163,8 @@ function startHeroAuto() {
 function renderTags() {
   const allTags = [...new Set(KAVITA_DATA.flatMap(p => p.tags))];
   const wrap = document.getElementById('tagFilterWrap');
-  wrap.innerHTML = `<button class="tag-chip active" onclick="filterByTag(null, this)">${isEnglish ? 'All' : 'सबै'}</button>` +
+  wrap.innerHTML =
+    `<button class="tag-chip active" onclick="filterByTag(null, this)">${isEnglish ? 'All' : 'सबै'}</button>` +
     allTags.map(t => `<button class="tag-chip" onclick="filterByTag('${t}', this)">#${t}</button>`).join('');
 }
 
@@ -178,8 +183,9 @@ function setupTabs() {
       tab.classList.add('active');
       currentFilter = tab.dataset.filter;
       currentTag = null;
+      const first = document.querySelector('.tag-chip');
       document.querySelectorAll('.tag-chip').forEach(c => c.classList.remove('active'));
-      if (document.querySelector('.tag-chip')) document.querySelector('.tag-chip').classList.add('active');
+      if (first) first.classList.add('active');
       renderCards();
     });
   });
@@ -189,31 +195,28 @@ function setupTabs() {
 function renderCards() {
   let data = [...KAVITA_DATA];
 
-  // Sort new first
   if (currentFilter === 'new') {
-    data.sort((a,b) => new Date(b.date) - new Date(a.date));
-  }
-
-  // Filter by category
-  if (currentFilter !== 'all' && currentFilter !== 'new') {
+    data.sort((a, b) => new Date(b.date) - new Date(a.date));
+  } else if (currentFilter !== 'all') {
     data = data.filter(p => p.category === currentFilter);
   }
 
-  // Filter by tag
   if (currentTag) {
     data = data.filter(p => p.tags.includes(currentTag));
   }
 
-  // सबै कविता randomly shuffle गरेर popular मा देखाउने
+  // Popular — randomly shuffled सबै
   const popular = [...KAVITA_DATA].sort(() => Math.random() - 0.5);
   document.getElementById('popularCards').innerHTML = popular.map(p => createCard(p, true)).join('');
+
   // All cards
   const allContainer = document.getElementById('allCards');
-  if (data.length === 0) {
-    allContainer.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="icon">📭</div><p>${isEnglish ? 'No works found' : 'कुनै रचना भेटिएन'}</p></div>`;
-  } else {
-    allContainer.innerHTML = data.map(p => createCard(p, false)).join('');
-  }
+  allContainer.innerHTML = data.length === 0
+    ? `<div class="empty-state" style="grid-column:1/-1">
+        <div class="icon">📭</div>
+        <p>${isEnglish ? 'No works found' : 'कुनै रचना भेटिएन'}</p>
+       </div>`
+    : data.map(p => createCard(p, false)).join('');
 }
 
 function createCard(poem, isScroll) {
@@ -221,7 +224,9 @@ function createCard(poem, isScroll) {
   return `
     <div class="card ${isScroll ? 'card-scroll' : ''}" onclick="openPoem('${poem.id}')">
       <div class="card-cover">
-        ${poem.cover ? `<img src="${poem.cover}" style="width:100%;height:100%;object-fit:cover;" alt="" />` : poem.coverEmoji}
+        ${poem.cover
+          ? `<img src="${poem.cover}" style="width:100%;height:100%;object-fit:cover;" alt="" />`
+          : poem.coverEmoji}
       </div>
       <div class="card-body">
         <div class="card-category">${getCategoryLabel(poem.category)}</div>
@@ -231,13 +236,19 @@ function createCard(poem, isScroll) {
           <span class="card-bookmark ${saved ? 'saved' : ''}">${saved ? '🔖' : '🏷️'}</span>
         </div>
       </div>
-      <button class="card-read-btn" onclick="event.stopPropagation(); openPoem('${poem.id}')">${isEnglish ? 'Read' : 'पढ्नुस्'}</button>
+      <button class="card-read-btn" onclick="event.stopPropagation(); openPoem('${poem.id}')">
+        ${isEnglish ? 'Read' : 'पढ्नुस्'}
+      </button>
     </div>
   `;
 }
 
 function getCategoryLabel(cat) {
-  const map = { kavita: isEnglish ? 'Poem' : 'कविता', lekh: isEnglish ? 'Essay' : 'लेख', gazal: isEnglish ? 'Gazal' : 'गजल' };
+  const map = {
+    kavita: isEnglish ? 'Poem'  : 'कविता',
+    lekh:   isEnglish ? 'Essay' : 'लेख',
+    gazal:  isEnglish ? 'Gazal' : 'गजल',
+  };
   return map[cat] || cat;
 }
 
@@ -247,18 +258,26 @@ function openPoem(id) {
   if (!poem) return;
   currentPoem = poem;
 
-  const saved = isBookmarked(poem.id);
-  document.getElementById('bookmarkBtn').textContent = saved ? '🔖' : '🏷️';
+  document.getElementById('bookmarkBtn').textContent = isBookmarked(poem.id) ? '🔖' : '🏷️';
+
+  // BS मिति poem date को लागि
+  const poemDate = new Date(poem.date);
+  const bs = engToBS(poemDate);
+  const dateLabel = bs
+    ? `${toNepaliNum(bs.day)} ${NEPALI_MONTHS_BS[bs.month - 1]} ${toNepaliNum(bs.year)}`
+    : poem.date;
 
   document.getElementById('modalBody').innerHTML = `
     <div class="poem-cover-large">
-      ${poem.cover ? `<img src="${poem.cover}" style="width:100%;height:100%;object-fit:cover;border-radius:16px;" />` : poem.coverEmoji}
+      ${poem.cover
+        ? `<img src="${poem.cover}" style="width:100%;height:100%;object-fit:cover;border-radius:16px;" />`
+        : poem.coverEmoji}
     </div>
     <h1 class="poem-title-large">${poem.title}</h1>
     <div class="poem-meta-row">
       <span class="poem-meta-badge accent">${getCategoryLabel(poem.category)}</span>
       <span class="poem-meta-badge">⏱ ${poem.readTime}</span>
-      <span class="poem-meta-badge">📅 ${formatDate(poem.date)}</span>
+      <span class="poem-meta-badge">📅 ${dateLabel}</span>
     </div>
     <div class="poem-divider"></div>
     <div class="poem-content">${poem.content}</div>
@@ -285,14 +304,9 @@ function filterByTagFromModal(tag) {
   renderTags();
   setTimeout(() => {
     const chip = [...document.querySelectorAll('.tag-chip')].find(c => c.textContent === '#' + tag);
-    if (chip) { chip.classList.add('active'); }
+    if (chip) chip.classList.add('active');
     renderCards();
   }, 100);
-}
-
-function formatDate(dateStr) {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('ne-NP', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
 // ===== RANDOM POEM =====
@@ -305,36 +319,14 @@ function showRandomPoem() {
 // ===== SECTION NAV =====
 function showSection(section) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-  event.currentTarget.classList.add('active');
-
+  if (event && event.currentTarget) event.currentTarget.classList.add('active');
   if (section === 'bookmarks') showBookmarks();
   if (section === 'home') { closeModal(); closeBookmarkModal(); }
-  if (section === 'about') showAbout();
-}
-
-function showAbout() {
-  document.getElementById('modalBody').innerHTML = `
-    <div style="text-align:center; padding: 20px 0;">
-      <div style="font-size:60px; margin-bottom:16px;">✍️</div>
-      <h2 style="font-family:'Tiro Devanagari Hindi',serif; font-size:24px; margin-bottom:8px;">प्रतीक</h2>
-      <p style="color:var(--text2); font-size:14px; line-height:1.8;">
-        साहित्यका प्रेमी, कविताका रचयिता।<br/>
-        यो संग्रहमा मेरा भावना र विचारहरू छन्।
-      </p>
-      <div class="poem-divider"></div>
-      <p style="color:var(--text2); font-size:13px;">
-        📧 आफ्नो विचार पठाउनुस्<br/>
-        🌐 GitHub मा पाउनुस्
-      </p>
-    </div>
-  `;
-  document.getElementById('poemModal').classList.add('open');
-  document.body.style.overflow = 'hidden';
 }
 
 // ===== MENU =====
 function setupMenu() {
-  document.getElementById('menuBtn').addEventListener('click', (e) => {
+  document.getElementById('menuBtn').addEventListener('click', e => {
     e.stopPropagation();
     document.getElementById('dropdownMenu').classList.toggle('open');
   });
