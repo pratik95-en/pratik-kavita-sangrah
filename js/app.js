@@ -20,14 +20,72 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ===== NEPALI CLOCK =====
 const NEPALI_NUMS = ['०','१','२','३','४','५','६','७','८','९'];
-const NEPALI_MONTHS = ['जनवरी','फेब्रुअरी','मार्च','अप्रिल','मे','जुन','जुलाई','अगस्ट','सेप्टेम्बर','अक्टोबर','नोभेम्बर','डिसेम्बर'];
-const NEPALI_DAYS = ['आइतबार','सोमबार','मंगलबार','बुधबार','बिहिबार','शुक्रबार','शनिबार'];
+const NEPALI_MONTHS = ['बैशाख','जेठ','असार','साउन','भदौ','असोज','कार्तिक','मंसिर','पुस','माघ','फागुन','चैत'];
+const NEPALI_DAYS   = ['आइतबार','सोमबार','मंगलबार','बुधबार','बिहिबार','शुक्रबार','शनिबार'];
 
 function toNepaliNum(n) {
   return String(n).split('').map(d => NEPALI_NUMS[+d] ?? d).join('');
 }
-
 function pad2(n) { return String(n).padStart(2, '0'); }
+
+// ===== ENGLISH → NEPALI DATE CONVERSION =====
+// Each entry = [nepali_year, nepali_month(1-12), nepali_day, english_year, english_month(1-12), english_day]
+// यो table ले हरेक वर्षको बैशाख १ को अंग्रेजी मिति राख्छ
+const BS_CALENDAR = [
+  [2080, 1, 1, 2023, 4, 14],
+  [2081, 1, 1, 2024, 4, 13],
+  [2082, 1, 1, 2025, 4, 14],
+  [2083, 1, 1, 2026, 4, 14],
+  [2084, 1, 1, 2027, 4, 14],
+];
+
+// प्रत्येक BS वर्षमा महिनाको दिन संख्या
+const BS_MONTH_DAYS = {
+  2080: [31,32,31,32,31,30,30,30,29,30,29,31],
+  2081: [31,31,32,31,31,31,30,29,30,30,29,31],
+  2082: [31,32,31,32,31,30,30,30,29,30,29,31],
+  2083: [31,32,31,32,31,30,30,30,29,30,29,31],
+  2084: [31,32,31,31,31,31,30,29,30,30,29,31],
+};
+
+function englishToNepali(engYear, engMonth, engDay) {
+  // Reference point खोज्ने
+  let refBS = null;
+  for (let i = BS_CALENDAR.length - 1; i >= 0; i--) {
+    const [by, bm, bd, ey, em, ed] = BS_CALENDAR[i];
+    const refEng = new Date(ey, em - 1, ed);
+    const target = new Date(engYear, engMonth - 1, engDay);
+    if (target >= refEng) {
+      refBS = { by, bm: bm - 1, bd, refDate: refEng };
+      break;
+    }
+  }
+  if (!refBS) return null;
+
+  // Reference देखि कति दिन बितेको
+  const target = new Date(engYear, engMonth - 1, engDay);
+  let diffDays = Math.floor((target - refBS.refDate) / 86400000);
+
+  let year = refBS.by;
+  let month = refBS.bm; // 0-indexed
+  let day = refBS.bd;
+
+  while (diffDays > 0) {
+    const monthDays = BS_MONTH_DAYS[year]?.[month] ?? 30;
+    const remaining = monthDays - day;
+    if (diffDays <= remaining) {
+      day += diffDays;
+      diffDays = 0;
+    } else {
+      diffDays -= (remaining + 1);
+      day = 1;
+      month++;
+      if (month >= 12) { month = 0; year++; }
+    }
+  }
+
+  return { year, month: month + 1, day };
+}
 
 function startClock() {
   function update() {
@@ -36,25 +94,27 @@ function startClock() {
     const m = now.getMinutes();
     const s = now.getSeconds();
     const ampm = h >= 12 ? 'बेलुका' : 'बिहान';
-
-    // 12-hour format
     if (h === 0) h = 12;
     else if (h > 12) h = h - 12;
 
     const timeStr = `${toNepaliNum(pad2(h))}:${toNepaliNum(pad2(m))}:${toNepaliNum(pad2(s))} ${ampm}`;
+    const weekDay = NEPALI_DAYS[now.getDay()];
 
-    const day = NEPALI_DAYS[now.getDay()];
-    const date = toNepaliNum(now.getDate());
-    const month = NEPALI_MONTHS[now.getMonth()];
-    const year = toNepaliNum(now.getFullYear());
+    // Nepali date conversion
+    const np = englishToNepali(now.getFullYear(), now.getMonth() + 1, now.getDate());
+    let dateStr = '';
+    if (np) {
+      dateStr = `${weekDay}, ${toNepaliNum(np.day)} ${NEPALI_MONTHS[np.month - 1]} ${toNepaliNum(np.year)}`;
+    } else {
+      dateStr = weekDay;
+    }
 
     const el = document.getElementById('liveClock');
-    if (el) el.textContent = `${day}, ${date} ${month} ${year} | ${timeStr}`;
+    if (el) el.textContent = `${dateStr} | ${timeStr}`;
   }
   update();
   setInterval(update, 1000);
 }
-
 // ===== HERO SLIDES =====
 function renderHero() {
   // सबै कविता randomly shuffle गर्ने
