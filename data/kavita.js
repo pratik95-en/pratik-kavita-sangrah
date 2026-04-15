@@ -427,7 +427,7 @@ const KAVITA_DATA = [
     title: "साथि",
     category: "kabita",
     tags: ["प्रेम", "साथ", "मित्रता","बन्धुत्व"],
-    cover: "",
+    cover: "covers/गजेन्द्रमोक्ष (1).png",
     coverEmoji: "👬",
     date: "2025-03-05",
     readTime: "३ मिनेट",
@@ -466,7 +466,7 @@ const KAVITA_DATA = [
     title: "मेरो देश नेपाल",
     category: "kabita",
     tags: ["देशभक्ति", "महिमा", "नेपाल","बन्धुत्व"],
-    cover: "",
+    cover: "covers/नेपाल.png",
     coverEmoji: "👬",
     date: "2025-03-05",
     readTime: "३ मिनेट",
@@ -507,8 +507,9 @@ const KAVITA_DATA = [
 छ यो विश्वको उच्च माथा हिमाल
 नदी नालका छन् यहाँ दिव्य जाल
 
-    `
-  ];
+  `
+}
+];
 
 // ============================================================
 //  नयाँ कविता थप्ने FORMAT:
