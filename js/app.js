@@ -145,12 +145,9 @@ function renderCards() {
     data = data.filter(p => p.tags.includes(currentTag));
   }
 
-  // Popular = featured first, then by date
-  const popular = [...KAVITA_DATA].filter(p => p.featured);
-  document.getElementById('popularCards').innerHTML = popular.length
-    ? popular.map(p => createCard(p, true)).join('')
-    : KAVITA_DATA.slice(0,3).map(p => createCard(p, true)).join('');
-
+  // सबै कविता randomly shuffle गरेर popular मा देखाउने
+  const popular = [...KAVITA_DATA].sort(() => Math.random() - 0.5);
+  document.getElementById('popularCards').innerHTML = popular.map(p => createCard(p, true)).join('');
   // All cards
   const allContainer = document.getElementById('allCards');
   if (data.length === 0) {
