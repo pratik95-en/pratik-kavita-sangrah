@@ -15,7 +15,6 @@ document.addEventListener('DOMContentLoaded', () => {
   startHeroAuto();
   setupTabs();
   setupMenu();
-  startClock();
 });
 
 // ===== NEPALI CLOCK =====
